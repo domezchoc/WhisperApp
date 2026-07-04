@@ -11,6 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
     private var cancellables = Set<AnyCancellable>()
 
     private var settingsWindow: NSWindow?
+    private var aboutWindow: NSWindow?
 
     private var toggleItem: NSMenuItem!
     private var cloudItem: NSMenuItem!
@@ -89,6 +90,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         settings.target = self
         menu.addItem(settings)
 
+        let about = NSMenuItem(title: "About WhisperApp", action: #selector(openAbout), keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
+
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
 
@@ -137,9 +142,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
-    // Return to menu-bar mode when settings window closes (hide from Dock)
+    @objc private func openAbout() {
+        if aboutWindow == nil {
+            let w = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 340, height: 420),
+                styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            w.title = "About WhisperApp"
+            w.contentView = NSHostingView(rootView: AboutView())
+            w.isReleasedWhenClosed = false
+            w.delegate = self
+            w.center()
+            aboutWindow = w
+        }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        aboutWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    // Return to menu-bar mode when settings/about window closes (hide from Dock)
     func windowWillClose(_ notification: Notification) {
-        if (notification.object as? NSWindow) === settingsWindow {
+        let win = notification.object as? NSWindow
+        if win === settingsWindow || win === aboutWindow {
             NSApp.setActivationPolicy(.accessory)
         }
     }
