@@ -1,66 +1,77 @@
-# WhisperApp
+# Whisper
 
-A macOS menu-bar speech-to-text dictation app — press a hotkey, speak, and the corrected text is pasted into whatever you're typing. Think Wispr Flow, built on open STT/LLM APIs you control.
+A macOS menu-bar dictation app — hold **Fn**, speak, release, and the AI-corrected text is pasted into whatever you're typing. Think Wispr Flow, powered by Groq with a single free API key.
 
-![WhisperApp](assets/logo.png)
+**Website:** https://gamezxz.github.io/WhisperApp/
+
+![Whisper](assets/logo.png)
+
+> The app is named **Whisper** (v1.2+); the repo/bundle keeps the historical name `WhisperApp`.
 
 ## Features
 
-- 🎙️ **Global hotkey** (toggle or hold-to-talk) — configurable, including the Fn key alone
-- ☁️ **Multi-provider STT** — ElevenLabs Scribe, OpenAI, Groq (Whisper), or any OpenAI-compatible endpoint
-- 🖥️ **Local STT** — whisper.cpp (large-v3) fallback, fully offline
-- ✨ **AI text correction** — DeepSeek, OpenAI, Groq, Gemini, Anthropic, GLM (Z.AI), or custom — fixes garbled words & adds punctuation
+- 🎙️ **Global hotkey** — default is the **Fn key alone**, hold-to-talk; toggle mode: double-tap to start, single tap to stop. Fully configurable in Settings.
+- ⚡ **One key, one provider** — a single Groq API key powers both transcription (`whisper-large-v3-turbo`) and AI correction (`llama-3.3-70b-versatile`)
+- ✨ **AI text correction** — fixes garbled words and adds punctuation before pasting
 - 📋 **Auto-paste** into the focused app (simulates ⌘V)
 - 🌊 Live waveform + status overlay (recording → transcribing → fixing → done)
-- 🔒 Keys stored locally (`~/.whisperapp/*.key` or shell env), never bundled or shipped
+- 🔒 Key stored locally (`~/.whisperapp/` or `GROQ_API_KEY` in your shell), never bundled or shipped
+- ✅ Signed & **notarized** DMG
 
 ## Requirements
 
 - macOS 13+
 - **Permissions:** Microphone + Accessibility (for auto-paste)
-- Optional: `whisper.cpp` (Homebrew) for local STT
+- A free Groq API key from [console.groq.com](https://console.groq.com)
 
 ## Install
 
-1. Download `WhisperApp-x.x.x.dmg` from [Releases](../../releases)
-2. Drag **WhisperApp** to **Applications**
+1. Download `Whisper-x.x.dmg` from [Releases](../../releases) (or the [website](https://gamezxz.github.io/WhisperApp/))
+2. Drag **Whisper** to **Applications**
 3. Open it — a mic icon appears in the menu bar
-4. **System Settings → Privacy & Security:**
-   - enable **Microphone**
-   - enable **Accessibility** (for auto-paste)
-5. Click the mic icon → **Settings…** → add your STT + LLM API keys
-6. Press the hotkey (default `⌃⌥Space`) and speak
+4. **System Settings → Privacy & Security:** enable **Microphone** and **Accessibility**
+5. Click the mic icon → **Settings…** → paste your Groq API key
+6. Hold **Fn** and speak
 
-## Configure keys
+## Configure the key
 
-Keys are read from (in order): the Settings UI (saved to `~/.whisperapp/`) → shell env (`~/.zshrc`).
+The key is read from (in order): the Settings UI (saved to `~/.whisperapp/`) → shell env (`~/.zshrc`).
 
 ```sh
-# optional: put keys in ~/.zshrc instead of the Settings UI
-export ELEVENLABS_API_KEY="..."
-export DEEPSEEK_API_KEY="..."
-export ZAI_API_KEY="..."          # for GLM (Z.AI) via Anthropic-compatible endpoint
+# optional: put the key in ~/.zshrc instead of the Settings UI
+export GROQ_API_KEY="gsk_..."
 ```
 
 ## Build from source
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/Gamezxz/WhisperApp
 cd WhisperApp
-./make_app.sh        # build + sign + assemble .app
-./make_dmg.sh        # build distributable .dmg
+./run.sh             # dev loop: build + launch the app
+./make_dmg.sh        # build → sign → notarize → staple → .dmg
 ```
 
-For a stable signature (so macOS remembers permissions across rebuilds), sign
-with your own **Developer ID Application** certificate — `make_app.sh` auto-detects it.
+Notarization in `make_dmg.sh` expects a keychain profile named `whisperapp-notary`
+(`xcrun notarytool store-credentials`). For a stable signature (so macOS remembers
+permissions across rebuilds), sign with your own **Developer ID Application**
+certificate — the build scripts auto-detect it.
+
+### Release checklist
+
+1. Bump version in `Info.plist`
+2. `./make_dmg.sh`
+3. `gh release create vX.Y *.dmg`
+4. Update the download link + version badge + JSON-LD (`softwareVersion`, `downloadUrl`) in `docs/index.html`
 
 ## Architecture
 
-- SwiftUI menu-bar app (`LSUIElement`), Carbon/`NSEvent` global hotkey
+- SwiftUI menu-bar app (`LSUIElement`), `NSEvent` global hotkey (`HotkeyManager.swift`)
 - `AVAudioEngine` → 16 kHz mono Int16 WAV recording
-- Cloud STT via multipart upload (ElevenLabs `model_id`/`language_code` or OpenAI-style `model`/`language`)
-- LLM correction via OpenAI-compatible **or** Anthropic-compatible request styles
+- STT + LLM correction via Groq's OpenAI-compatible API
 - Floating `NSPanel` + SwiftUI status overlay
+- Provider registries (`STTProvider.swift`, `LLMProvider.swift`) still support other
+  OpenAI/Anthropic-compatible endpoints internally, but the Settings UI is Groq-only
+- Promo site lives in `docs/` (GitHub Pages, cream/clay theme, full SEO meta)
 
 ## License
 
