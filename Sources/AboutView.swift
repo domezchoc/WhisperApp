@@ -6,20 +6,26 @@ struct AboutView: View {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
     }
 
+    /// Logo (paper-cut mic, no squircle padding) → app icon → SF symbol fallback.
+    private var appIcon: Image {
+        if let path = Bundle.main.path(forResource: "logo", ofType: "png"),
+           let img = NSImage(contentsOfFile: path) {
+            return Image(nsImage: img)
+        }
+        if let path = Bundle.main.path(forResource: "Icon", ofType: "icns"),
+           let img = NSImage(contentsOfFile: path) {
+            return Image(nsImage: img)
+        }
+        return Image(systemName: "mic.circle.fill")
+    }
+
     var body: some View {
         VStack(spacing: 14) {
-            if let iconPath = Bundle.main.path(forResource: "Icon", ofType: "icns"),
-               let icon = NSImage(contentsOfFile: iconPath) {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 96, height: 96)
-                    .shadow(color: Color(red: 0.8, green: 0.44, blue: 0.3).opacity(0.35), radius: 14, y: 6)
-            } else {
-                Image(systemName: "mic.circle.fill")
-                    .resizable()
-                    .frame(width: 96, height: 96)
-                    .foregroundColor(Color(red: 0.8, green: 0.44, blue: 0.3))
-            }
+            appIcon
+                .resizable()
+                .scaledToFit()
+                .frame(width: 110, height: 110)
+                .shadow(color: Color(red: 0.8, green: 0.44, blue: 0.3).opacity(0.35), radius: 14, y: 6)
 
             Text("Whisper")
                 .font(.title2).bold()

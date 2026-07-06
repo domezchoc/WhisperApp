@@ -7,17 +7,13 @@ class CloudTranscriptionService {
 
     var isAvailable: Bool { STTSettings.key(for: provider) != nil }
 
-    /// Convert app language → language code based on provider style
-    /// - elevenlabs uses ISO 639-3 (tha/eng)  ·  openAI uses ISO 639-1 (th/en)
+    /// Convert app language → language code based on provider style.
+    /// - elevenlabs uses ISO 639-3 (tha/eng)  ·  openAI/Groq uses ISO 639-1 (th/en)
     /// - "auto" → nil (let the provider auto-detect)
     private func langCode(_ language: String, style: STTProvider.Style) -> String? {
-        switch (language, style) {
-        case ("th", .elevenlabs): return "tha"
-        case ("en", .elevenlabs): return "eng"
-        case ("th", .openAI):     return "th"
-        case ("en", .openAI):     return "en"
-        default:                  return nil
-        }
+        guard let lang = Languages.find(language) else { return nil }
+        if lang.code == "auto" { return nil }
+        return (style == .elevenlabs) ? lang.iso3 : lang.code
     }
 
     func transcribe(fileURL: URL, language: String, completion: @escaping (String?) -> Void) {

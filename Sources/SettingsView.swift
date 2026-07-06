@@ -72,6 +72,9 @@ struct SettingsView: View {
                         .font(.caption2).foregroundColor(.secondary)
                 }
 
+                Text("💡 Fix words the STT keeps mis-transcribing via Dictionary…")
+                    .font(.caption2).foregroundColor(.secondary)
+
                 Spacer(minLength: 0)
             }
             .padding(20)

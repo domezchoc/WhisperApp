@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import Combine
 import AVFoundation
+import Sparkle
 
 class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDelegate {
     let controller = DictationController()
@@ -9,16 +10,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
     private var statusItem: NSStatusItem!
     private var panel: NSPanel!
     private var cancellables = Set<AnyCancellable>()
+    private var updaterController: SPUStandardUpdaterController!
 
     private var settingsWindow: NSWindow?
     private var aboutWindow: NSWindow?
+    private var dictionaryWindow: NSWindow?
 
     private var toggleItem: NSMenuItem!
     private var cloudItem: NSMenuItem!
     private var correctionItem: NSMenuItem!
-    private var thItem: NSMenuItem!
-    private var enItem: NSMenuItem!
-    private var autoItem: NSMenuItem!
+    private var langMenu: NSMenu!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AVCaptureDevice.requestAccess(for: .audio) { _ in }
@@ -53,6 +54,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
 
         // Request Accessibility permission once (required for auto ⌘V paste)
         Paster.promptAccessibilityOnce()
+
+        // Sparkle auto-updater (checks SUFeedURL on launch + daily)
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     }
 
     // MARK: - Status bar
@@ -77,21 +82,46 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         menu.addItem(.separator())
 
         let langMenu = NSMenu()
-        thItem = NSMenuItem(title: "Thai", action: #selector(setThai), keyEquivalent: "")
-        autoItem = NSMenuItem(title: "Auto", action: #selector(setAuto), keyEquivalent: "")
-        enItem = NSMenuItem(title: "English", action: #selector(setEnglish), keyEquivalent: "")
-        [thItem, autoItem, enItem].forEach { $0?.target = self; langMenu.addItem($0!) }
+        let autoItem = NSMenuItem(title: Languages.auto.name, action: #selector(setLanguage(_:)), keyEquivalent: "")
+        autoItem.target = self
+        autoItem.representedObject = Languages.auto.code
+        langMenu.addItem(autoItem)
+        langMenu.addItem(.separator())
+        for lang in Languages.all {
+            let item = NSMenuItem(title: lang.name, action: #selector(setLanguage(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = lang.code
+            langMenu.addItem(item)
+        }
         let langParent = NSMenuItem(title: "Language", action: nil, keyEquivalent: "")
         langParent.submenu = langMenu
         menu.addItem(langParent)
+        self.langMenu = langMenu
         menu.addItem(.separator())
 
         let settings = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
+        settings.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
         menu.addItem(settings)
+
+        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updates.target = self
+        updates.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: nil)
+        menu.addItem(updates)
+
+        let whatsNew = NSMenuItem(title: "What's New…", action: #selector(openChangelog), keyEquivalent: "")
+        whatsNew.target = self
+        whatsNew.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: nil)
+        menu.addItem(whatsNew)
+
+        let dictionary = NSMenuItem(title: "Dictionary…", action: #selector(openDictionary), keyEquivalent: "d")
+        dictionary.target = self
+        dictionary.image = NSImage(systemSymbolName: "text.book.closed", accessibilityDescription: nil)
+        menu.addItem(dictionary)
 
         let about = NSMenuItem(title: "About Whisper", action: #selector(openAbout), keyEquivalent: "")
         about.target = self
+        about.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         menu.addItem(about)
 
         let quit = NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -111,17 +141,29 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         correctionItem.title = "AI Correction (\(LLMSettings.current.name))"
         let hk = HotkeyManager.shared.currentConfig.displayString
         toggleItem.title = controller.isRecording ? "Stop Speaking (\(hk))" : "Start Speaking (\(hk))"
-        thItem.state = controller.language == "th" ? .on : .off
-        autoItem.state = controller.language == "auto" ? .on : .off
-        enItem.state = controller.language == "en" ? .on : .off
+        for item in langMenu.items {
+            let code = item.representedObject as? String
+            item.state = (code == controller.language) ? .on : .off
+        }
     }
 
     @objc private func toggleAction() { controller.toggle() }
     @objc private func toggleCloud() { controller.useCloudSTT.toggle(); updateStates() }
     @objc private func toggleCorrection() { controller.useCorrection.toggle(); updateStates() }
-    @objc private func setThai() { controller.language = "th"; updateStates() }
-    @objc private func setAuto() { controller.language = "auto"; updateStates() }
-    @objc private func setEnglish() { controller.language = "en"; updateStates() }
+    @objc private func setLanguage(_ sender: NSMenuItem) {
+        if let code = sender.representedObject as? String { controller.language = code }
+        updateStates()
+    }
+
+    @objc private func checkForUpdates() {
+        updaterController?.updater.checkForUpdates()
+    }
+
+    @objc private func openChangelog() {
+        if let url = URL(string: "https://gamezxz.github.io/WhisperApp/changelog") {
+            NSWorkspace.shared.open(url)
+        }
+    }
 
     @objc private func openSettings() {
         if settingsWindow == nil {
@@ -159,10 +201,27 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         aboutWindow?.makeKeyAndOrderFront(nil)
     }
 
-    // Return to menu-bar mode when settings/about window closes (hide from Dock)
+    @objc private func openDictionary() {
+        if dictionaryWindow == nil {
+            let w = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 460, height: 460),
+                styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            w.title = "Custom Dictionary"
+            w.contentView = NSHostingView(rootView: DictionaryView())
+            w.isReleasedWhenClosed = false
+            w.delegate = self
+            w.center()
+            dictionaryWindow = w
+        }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        dictionaryWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    // Return to menu-bar mode when a window closes (hide from Dock)
     func windowWillClose(_ notification: Notification) {
         let win = notification.object as? NSWindow
-        if win === settingsWindow || win === aboutWindow {
+        if win === settingsWindow || win === aboutWindow || win === dictionaryWindow {
             NSApp.setActivationPolicy(.accessory)
         }
     }

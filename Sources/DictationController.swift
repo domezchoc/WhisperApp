@@ -68,11 +68,13 @@ class DictationController: ObservableObject {
         let finishOnMain: (String) -> Void = { [weak self] text in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                let snippet = String(text.prefix(28))
+                // แม้ correction ปิดอยู่ หรือ LLM มองข้ามคำเฉพาะ ก็ให้ dictionary เป็นเจ้าบทบาทสุดท้าย
+                let final = CorrectionDictionary.shared.apply(to: text)
+                let snippet = String(final.prefix(28))
                 self.status = "✅ " + snippet
                 self.stage = .done(snippet)
                 self.processing = false
-                Paster.paste(text)
+                Paster.paste(final)
                 // กลับเป็น idle หลังโชว์สักครู่
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
                     guard let self = self else { return }

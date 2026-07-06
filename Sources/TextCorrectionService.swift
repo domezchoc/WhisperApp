@@ -23,13 +23,15 @@ class TextCorrectionService: ObservableObject {
         }
 
         let langHint: String
-        switch language {
-        case "th": langHint = "The text is in Thai"
-        case "en": langHint = "The text is in English"
-        default:   langHint = "The text may be in Thai or English — keep the original language"
+        if language == "auto" {
+            langHint = "The text may be in any language — keep the original language"
+        } else if let name = Languages.find(language)?.name {
+            langHint = "The text is in \(name)"
+        } else {
+            langHint = "The text may be in any language — keep the original language"
         }
 
-        let systemPrompt = """
+        var systemPrompt = """
         You are a text correction assistant for speech-to-text output, which often contains
         misheard words and missing punctuation.
         Your tasks:
@@ -39,6 +41,14 @@ class TextCorrectionService: ObservableObject {
         - Return ONLY the corrected text — no explanations, no quotation marks
         \(langHint)
         """
+
+        // User's own known corrections — helps with proper nouns / brand names the model
+        // wouldn't otherwise know. (A deterministic pass also runs before paste, so exact
+        // matches always land even if the model ignores this.)
+        let hint = CorrectionDictionary.shared.hintForPrompt
+        if !hint.isEmpty {
+            systemPrompt += "\n\nThe user's own known corrections for their speech — apply these where the meaning matches:\n" + hint
+        }
 
         let endpoint = LLMSettings.endpoint(for: p)
         let model = LLMSettings.model(for: p)

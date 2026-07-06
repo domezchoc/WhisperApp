@@ -1,0 +1,30 @@
+<?xml version="1.0" standalone="yes"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Whisper</title>
+    <link>https://gamezxz.github.io/WhisperApp/appcast.xml</link>
+    <description>Most recent changes to Whisper</description>
+    <language>en</language>
+    <!--
+      Add a new <item> at the TOP whenever a version ships. make_release.sh does this
+      automatically, but here's the shape for reference:
+
+      <item>
+        <title>Version 1.3</title>
+        <pubDate>Mon, 07 Jul 2026 12:00:00 +0000</pubDate>
+        <sparkle:version>1.3</sparkle:version>
+        <sparkle:shortVersionString>1.3</sparkle:shortVersionString>
+        <sparkle:edSignature>BASE64_SIGNATURE</sparkle:edSignature>
+        <sparkle:length>ZIP_BYTE_LENGTH</sparkle:length>
+        <description><![CDATA[
+          <h3>What's new</h3>
+          <ul><li>...</li></ul>
+        ]]></description>
+        <enclosure url="https://github.com/Gamezxz/WhisperApp/releases/download/v1.3/WhisperApp-1.3.zip"
+                   type="application/octet-stream"
+                   sparkle:edSignature="BASE64_SIGNATURE"
+                   sparkle:length="ZIP_BYTE_LENGTH" />
+      </item>
+    -->
+  </channel>
+</rss>
