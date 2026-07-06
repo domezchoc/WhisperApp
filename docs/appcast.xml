@@ -5,22 +5,11 @@
     <link>https://gamezxz.github.io/WhisperApp/appcast.xml</link>
     <description>Most recent changes to Whisper</description>
     <language>en</language>
-    <item>
-        <title>Version 1.2.4</title>
-        <pubDate>Tue, 07 Jul 2026 03:19:49 +0700</pubDate>
-        <sparkle:version>1.2.4</sparkle:version>
-        <sparkle:shortVersionString>1.2.4</sparkle:shortVersionString>
-        <description><![CDATA[Fix: app bundle is now notarized + stapled (Gatekeeper no longer blocks on other Macs)]]></description>
-        <enclosure url="https://github.com/Gamezxz/WhisperApp/releases/download/v1.2.4/Whisper-1.2.4.zip" type="application/octet-stream" sparkle:edSignature="Nian3tjFNVAgZWOl+rE+j7JhPUAMOevP0xcwlSMTFOD4/IAZBq9fijJW57aUWR1OXMUApj6QG1wtzW5NII+qDg==" sparkle:length="4604482" />
-    </item>
-    <item>
-        <title>Version 1.2.3</title>
-        <pubDate>Tue, 07 Jul 2026 03:07:52 +0700</pubDate>
-        <sparkle:version>1.2.3</sparkle:version>
-        <sparkle:shortVersionString>1.2.3</sparkle:shortVersionString>
-        <description><![CDATA[Custom Dictionary, 16 languages, Sparkle auto-update, What's New menu, About logo, menu icons, full English UI, now installs as Whisper.app]]></description>
-        <enclosure url="https://github.com/Gamezxz/WhisperApp/releases/download/v1.2.3/Whisper-1.2.3.zip" type="application/octet-stream" sparkle:edSignature="rzdcX3KleIijLKKQzcJ9b2NWR9v2brVyL1O6ZfkI0KXLz9wfnkT4CJlIUA2JWqxkDo9YkS1zdtWjo7/T3VPfBQ==" sparkle:length="4604484" />
-    </item>
+    <!--
+      v1.2.3 / v1.2.4 pulled — they were built without notarization (Apple
+      Developer agreement had expired, notarytool failed silently). Re-ship
+      as a proper release once the agreement is signed.
+    -->
     <!--
       Add a new <item> at the TOP whenever a version ships. make_release.sh does this
       automatically, but here's the shape for reference:

@@ -20,21 +20,22 @@ DEV_ID=$(security find-identity -v -p codesigning "$KEYCHAIN" 2>/dev/null | grep
 # จำเป็นเพราะ: Sparkle แจก .zip ของ .app, และถ้า user แตก .app ออกจาก DMG,
 # Gatekeeper บนเครื่องอื่นเช็ค .app โดยตรง — ถ้าไม่มี notarization ticket → บล็อก
 NOTARY_PROFILE="whisperapp-notary"
-if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
-    echo "📤 Notarizing $APP_BUNDLE (อาจใช้เวลา 1-5 นาที)..."
-    NOTARY_ZIP="/tmp/${APP_NAME}-notary.zip"
-    ditto -c -k --keepParent "$APP_BUNDLE" "$NOTARY_ZIP"
-    if xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait; then
-        xcrun stapler staple "$APP_BUNDLE"
-        echo "✅ $APP_BUNDLE notarized + stapled"
-    else
-        echo "⚠️  Notarize .app ไม่ผ่าน — ดู log: xcrun notarytool log <submission-id> --keychain-profile $NOTARY_PROFILE"
-    fi
-    rm -f "$NOTARY_ZIP"
-else
-    echo "⚠️  ข้าม notarize .app — ไม่มี credentials profile '$NOTARY_PROFILE'"
-    echo "   สร้างครั้งเดียว: xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id <apple-id> --team-id DYJAX3728R"
+if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+    echo "❌ ไม่มี credentials profile '$NOTARY_PROFILE' — สร้างก่อน:"
+    echo "   xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id <apple-id> --team-id DYJAX3728R"
+    exit 1
 fi
+echo "📤 Notarizing $APP_BUNDLE (อาจใช้เวลา 1-5 นาที)..."
+NOTARY_ZIP="/tmp/${APP_NAME}-notary.zip"
+ditto -c -k --keepParent "$APP_BUNDLE" "$NOTARY_ZIP"
+if ! xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait; then
+    rm -f "$NOTARY_ZIP"
+    echo "❌ Notarize .app ล้มเหลว — หยุด (ถ้า error เป็น 'agreement is missing/expired' ให้ไป sign agreement ที่ appstoreconnect.apple.com)"
+    exit 1
+fi
+rm -f "$NOTARY_ZIP"
+xcrun stapler staple "$APP_BUNDLE"
+echo "✅ $APP_BUNDLE notarized + stapled"
 
 echo "📦 เตรียม staging สำหรับ DMG..."
 STAGE=$(mktemp -d)
@@ -86,22 +87,20 @@ if [ -n "$DEV_ID" ]; then
     codesign --sign "$DEV_ID" --timestamp "$DMG_NAME" 2>/dev/null && echo "✍️  sign DMG ด้วย Developer ID"
 fi
 
-# Notarize + staple (ทำให้เครื่องอื่นเปิดได้โดยไม่มีคำเตือนความปลอดภัย)
-# ต้องมี credentials profile ชื่อ "whisperapp-notary" (สร้างครั้งเดียวด้วย:
-#   xcrun notarytool store-credentials "whisperapp-notary" --apple-id <apple-id> --team-id DYJAX3728R)
+# Notarize + staple DMG (ทำให้เครื่องอื่นเปิดได้โดยไม่มีคำเตือนความปลอดภัย)
 NOTARY_PROFILE="whisperapp-notary"
-if xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
-    echo "📤 ส่ง notarize กับ Apple (อาจใช้เวลา 1-5 นาที)..."
-    if xcrun notarytool submit "$DMG_NAME" --keychain-profile "$NOTARY_PROFILE" --wait; then
-        xcrun stapler staple "$DMG_NAME"
-        echo "✅ Notarized + stapled — เปิดบนเครื่องอื่นได้โดยไม่มีคำเตือน"
-    else
-        echo "⚠️  Notarize ไม่ผ่าน — ดู log ด้วย: xcrun notarytool log <submission-id> --keychain-profile $NOTARY_PROFILE"
-    fi
-else
-    echo "⚠️  ข้าม notarize — ยังไม่มี credentials profile '$NOTARY_PROFILE'"
-    echo "   สร้างครั้งเดียว: xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id <apple-id> --team-id DYJAX3728R"
+if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+    echo "❌ ไม่มี credentials profile '$NOTARY_PROFILE' — สร้างก่อน:"
+    echo "   xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id <apple-id> --team-id DYJAX3728R"
+    exit 1
 fi
+echo "📤 Notarizing $DMG_NAME (อาจใช้เวลา 1-5 นาที)..."
+if ! xcrun notarytool submit "$DMG_NAME" --keychain-profile "$NOTARY_PROFILE" --wait; then
+    echo "❌ Notarize DMG ล้มเหลว — หยุด (ถ้า error เป็น 'agreement is missing/expired' ให้ไป sign agreement ที่ appstoreconnect.apple.com)"
+    exit 1
+fi
+xcrun stapler staple "$DMG_NAME"
+echo "✅ DMG notarized + stapled — เปิดบนเครื่องอื่นได้โดยไม่มีคำเตือน"
 
 echo ""
 echo "✅ เสร็จ: $DMG_NAME"
