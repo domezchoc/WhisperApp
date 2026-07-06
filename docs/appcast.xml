@@ -5,6 +5,14 @@
     <link>https://gamezxz.github.io/WhisperApp/appcast.xml</link>
     <description>Most recent changes to Whisper</description>
     <language>en</language>
+    <item>
+        <title>Version 1.2.5</title>
+        <pubDate>Tue, 07 Jul 2026 03:30:20 +0700</pubDate>
+        <sparkle:version>1.2.5</sparkle:version>
+        <sparkle:shortVersionString>1.2.5</sparkle:shortVersionString>
+        <description><![CDATA[Notarized build — app bundle + Sparkle framework now fully signed & notarized (fixes Gatekeeper warning)]]></description>
+        <enclosure url="https://github.com/Gamezxz/WhisperApp/releases/download/v1.2.5/Whisper-1.2.5.zip" type="application/octet-stream" sparkle:edSignature="S+hQjcEnvASX580nfHpQZjRemRQmloRKPDwu0Sk1QTh2azTH+kaLLuqkZDDb3Lm7ExVoJBuxoqCYwoY+AtirDw==" sparkle:length="4645975" />
+    </item>
     <!--
       v1.2.3 / v1.2.4 pulled — they were built without notarization (Apple
       Developer agreement had expired, notarytool failed silently). Re-ship

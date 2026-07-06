@@ -49,8 +49,10 @@ DEV_ID=$(security find-identity -v -p codesigning "$KEYCHAIN" 2>/dev/null | grep
 
 if [ -n "$DEV_ID" ]; then
     # Sign nested Sparkle.framework ก่อน (ลำดับสำคัญ — nested ต้อง sign ก่อน bundle)
+    # --deep เพราะ framework มี nested executables (Autoupdate, Updater.app, XPC services)
+    # ที่ต้อง sign + hardened runtime + secure timestamp ทุกตัว ไม่งั้น notarization reject
     if [ -d "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework" ]; then
-        codesign --force --sign "$DEV_ID" --options runtime --timestamp \
+        codesign --force --deep --sign "$DEV_ID" --options runtime --timestamp \
             "$APP_BUNDLE/Contents/Frameworks/Sparkle.framework"
     fi
     echo "✍️  Code signing ด้วย Developer ID: $DEV_ID"
