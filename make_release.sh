@@ -37,8 +37,12 @@ ditto -c -k --keepParent "$APP_BUNDLE" "$APP_NAME-$VERSION.zip"
 # 4. EdDSA-sign the zip (private key from keychain)
 echo "✍️  Signing update (EdDSA)…"
 SIG_OUT=$("$SIGN_UPDATE" "$APP_NAME-$VERSION.zip")
-EDSIG=$(echo "$SIG_OUT" | grep -o 'edSignature=[^ ]*' | cut -d= -f2)
-LENGTH=$(echo "$SIG_OUT" | grep -o 'length=[0-9]*' | cut -d= -f2)
+# sign_update prints: sparkle:edSignature="..." length="..."
+EDSIG=$(echo "$SIG_OUT" | grep -o 'edSignature="[^"]*"' | cut -d'"' -f2)
+LENGTH=$(echo "$SIG_OUT" | grep -o 'length="[^"]*"' | cut -d'"' -f2)
+if [ -z "$EDSIG" ] || [ -z "$LENGTH" ]; then
+    echo "❌ parse sign_update ไม่สำเร็จ:"; echo "$SIG_OUT"; exit 1
+fi
 echo "   edSignature: $EDSIG"
 echo "   length: $LENGTH"
 
