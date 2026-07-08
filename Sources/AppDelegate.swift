@@ -56,8 +56,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWindowDele
         Paster.promptAccessibilityOnce()
 
         // Sparkle auto-updater (checks SUFeedURL on launch + daily)
-        updaterController = SPUStandardUpdaterController(
-            startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+//        updaterController = SPUStandardUpdaterController(
+//            startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     }
 
     // MARK: - Status bar
